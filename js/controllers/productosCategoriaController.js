@@ -19,4 +19,6 @@ app.controller('ProductosCategoriaController', function($scope, $http) {
         $scope.$emit('categoriaSeleccionada', categoria);
         if ($scope.$parent) { $scope.$parent.categoriaSeleccionada = categoria; }
     };
+
+    
 });

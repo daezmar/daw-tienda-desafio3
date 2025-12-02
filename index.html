@@ -17,10 +17,16 @@
 <body ng-controller="MainController">
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-dark bg-dark px-4">
-        <span class="navbar-brand fs-4 fw-bold">Mi Tienda</span>
-        <i class="bi bi-cart3 text-white fs-4"></i>
-    </nav>
+<nav class="navbar navbar-dark bg-dark px-4">
+    <span class="navbar-brand fs-4 fw-bold">Mi Tienda</span>
+    <div class="d-flex align-items-center"
+         data-bs-toggle="modal" 
+         data-bs-target="#carritoModal"
+         style="cursor: pointer;">
+        <i class="bi bi-cart3 text-white fs-4 me-2"></i>
+        <span class="text-white fs-5 fw-bold" ng-bind="'$' + (totalGeneralDisplay || '0.00')"></span>
+    </div>
+</nav>
 
     <!-- SLIDER -->
     <div id="heroSlider" class="carousel slide" data-bs-ride="carousel">
@@ -66,7 +72,7 @@
         ng-show="productosPorCategoria.length > 0">
 
         <h2 class="text-center mb-4">
-            Productos en: {{ $parent.categoriaSeleccionada }}
+            Productos en: {{ $parent.categoriaSeleccionada || 'Todos' }}
         </h2>
 
         <div class="row justify-content-center">
@@ -80,7 +86,8 @@
                         <p class="text-success fw-bold">$ {{ prod.price }}</p>
 
                         <button class="btn btn-primary w-100"
-                                data-bs-toggle="modal" data-bs-target="#productoModal">
+                            ng-click="verDetalles(prod)"
+                            data-bs-toggle="modal" data-bs-target="#productoModal">
                             Detalles
                         </button>
                     </div>
@@ -105,10 +112,11 @@
                         <h5 class="card-title">{{ item.title }}</h5>
                         <p class="text-success fw-bold">$ {{ item.price }}</p>
 
-                        <button class="btn btn-primary w-100"
-                            data-bs-toggle="modal" data-bs-target="#productoModal">
-                            Detalles
-                        </button>
+                            <button class="btn btn-primary w-100"
+                                ng-click="verDetalles(item)"
+                                data-bs-toggle="modal" data-bs-target="#productoModal">
+                                Detalles
+                            </button>
                     </div>
                 </div>
             </div>
@@ -117,27 +125,119 @@
     </div>
 
     <!-- MODAL -->
-    <div class="modal fade" id="productoModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Detalles del producto</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+<div class="modal fade" id="productoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" ng-if="productoSeleccionado"> 
+            
+            <div class="modal-header">
+                <h5 class="modal-title">{{ productoSeleccionado.title }}</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
-                <div class="modal-body">
-                    <!--MODIFICACIONES AL MODAL POR ACA -->
-                    <p>Contenido visual del modal.</p>
+            <div class="modal-body row">
+                <div class="col-4">
+                    <img ng-src="{{ productoSeleccionado.image }}" class="img-fluid rounded" alt="imagen del producto">
+                </div>
+                <div class="col-8">
+                    <p class="fs-4 fw-bold text-success">$ {{ productoSeleccionado.price | number: 2 }}</p>
+                    <p>{{ productoSeleccionado.description }}</p>
+                    <p class="small text-muted">Categoría: {{ productoSeleccionado.category }}</p>
                 </div>
             </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-dark" 
+                        data-bs-dismiss="modal"
+                        ng-click="agregarProductoAlCarrito(productoSeleccionado)">
+                    <i class="bi bi-cart-plus me-2"></i>Agregar
+                </button>
+            </div>
+            
         </div>
     </div>
+</div>
+
+<div class="modal fade" id="carritoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Carrito de compras</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div ng-if="carrito.length === 0" class="text-center p-5">
+                    <p class="lead">El carrito está vacio.</p>
+                </div>
+                
+                <table class="table table-striped" ng-if="carrito.length > 0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-end">Precio</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-end">SubTotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in carrito">
+                            <td class="align-middle d-flex align-items-center">
+                                <img ng-src="{{ item.image }}" style="width: 50px; margin-right: 10px;" class="rounded">
+                            
+                            </td>
+                            <td class="align-middle text-end">$ {{ item.price | number: 2 }}</td>
+                            <td class="align-middle text-center">
+                                <div class="input-group input-group-sm d-inline-flex" style="width: 120px;">
+                                    <button class="btn btn-outline-secondary" ng-click="decrementarCantidad(item)">-</button>
+                                    <input type="text" class="form-control text-center" ng-model="item.quantity" readonly>
+                                    <button class="btn btn-outline-secondary" ng-click="incrementarCantidad(item)">+</button>
+                                </div>
+                            </td>
+                            <td class="align-middle text-end fw-bold">$ {{ calcularSubtotal(item) }}</td>
+                            <td class="align-middle">
+                                <button class="btn btn-danger btn-sm" ng-click="eliminarItem(item)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold fs-5">Total General:</td>
+                            <td class="text-end fw-bold fs-5 text-primary">$ {{ totalGeneralDisplay }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+                <button type="button" class="btn btn-success" 
+                        ng-click="RealizarPago()"
+                        ng-disabled="carrito.length === 0">
+                    <i class="bi bi-credit-card me-2"></i>Pagar
+                </button>
+            </div>
+            
+        </div>
+    </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="js/app.js"></script>
+    <script src="js/controllers/MainController.js"></script>
     <script src="js/controllers/categoriasController.js"></script>
     <script src="js/controllers/productosCategoriaController.js"></script>
+    <script src="js/controllers/ProductosCtrl.js"></script>
 
 </body>
 
