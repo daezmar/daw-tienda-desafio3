@@ -2,6 +2,7 @@ var app = angular.module('TiendaApp', []);
 
 app.controller('MainController', function($scope) {
     $scope.categoriaSeleccionada = null;
+    $scope.busquedaTexto = '';
 });
 
 app.controller('ProductosCtrl', function ($scope, $http) {
